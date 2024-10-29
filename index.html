@@ -3,86 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deepawali Wishes</title>
+    <title>Message Sharing Application</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            background-image: url('background.jpg'); /* Replace with your background image */
-            background-size: cover;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            margin: 0;
+            background: url('download.jpeg') no-repeat center center fixed;
+            background-size: cover;
             font-family: Arial, sans-serif;
             color: #fff;
-        }
-        #mainContainer {
             text-align: center;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 20px;
+        }
+        .container {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 40px 20px;
             border-radius: 10px;
+            width: 300px;
         }
-        .popup, .link-popup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            color: #fff;
-            z-index: 10;
-        }
-        input, textarea {
-            width: calc(100% - 20px);
-            margin: 10px 0;
+        input[type="text"] {
             padding: 10px;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            width: 100%;
         }
         button {
-            padding: 10px 15px;
+            background: #FF5722;
+            color: white;
             border: none;
             border-radius: 5px;
-            background-color: #ff5722;
-            color: white;
+            width: 100%;
+            height: 50px;
+            font-size: 20px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            outline: none;
+            transition: transform 0.3s ease;
         }
         button:hover {
-            background-color: #e64a19;
+            transform: scale(1.05);
+        }
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .popup-content {
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            color: #fff;
+            text-align: left;
+        }
+        footer {
+            position: fixed;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            opacity: 0.9;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
 
-<div id="mainContainer">
-    <h1>Send Your Deepawali Wishes</h1>
-    <button id="startButton">Start</button>
-</div>
-
-<div id="senderPopup" class="popup">
-    <h2>Enter Your Details</h2>
+<div class="container" id="senderContainer">
+    <h1>Sender</h1>
     <input type="text" id="senderName" placeholder="Your Name" required>
-    <input type="text" id="senderDignity" placeholder="Your Dignity" required>
-    <textarea id="senderMessage" placeholder="Your Message" required></textarea>
-    <button id="generateLinkButton">Generate Link</button>
+    <input type="text" id="senderMessage" placeholder="Your Message" required>
+    <button id="generateLinkBtn">Generate Link</button>
+    <p id="linkText" style="display:none;"></p>
+    <button id="shareLinkBtn" style="display:none;">Copy Link</button>
 </div>
 
-<div id="linkPopup" class="link-popup">
-    <h2>Share This Link</h2>
-    <p id="generatedLink"><a href="#" target="_blank" id="shareableLink">Click here to view your wish</a></p>
-    <button id="shareButton">Share Link</button>
+<div class="container" id="receiverContainer" style="display:none;">
+    <h1>Receiver</h1>
+    <input type="text" id="receiverName" placeholder="Your Name" required>
+    <button id="submitCaptureBtn">Submit</button>
 </div>
+
+<div class="popup" id="popup">
+    <div class="popup-content">
+        <h2>Dear <span id="receiverWishName"></span>,</h2>
+        <p id="displayedMessage"></p>
+        <img id="receiverImage" src="" alt="Receiver Image" style="width:100px; border-radius: 50%;">
+        <p>Sincerely,<br><span id="senderNameDisplay"></span></p>
+    </div>
+</div>
+
+<footer>
+    Design & Built By Your Name
+</footer>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDoc, doc } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-storage.js";
 
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAwB8JWKIRK6Bkat-NdM6OyVAvdrBk5cmM",
   authDomain: "capturedeep-126bf.firebaseapp.com",
@@ -95,103 +129,97 @@ const firebaseConfig = {
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const storage = getStorage(app);
 
-    // Open sender popup
-    window.openSenderPopup = function() {
-        document.getElementById("mainContainer").style.display = "none";
-        document.getElementById("senderPopup").style.display = "block";
-    };
-
-    // Generate link and store data in Firestore
-    window.generateLink = async function() {
-        const name = document.getElementById("senderName").value.trim();
-        const dignity = document.getElementById("senderDignity").value.trim();
-        const message = document.getElementById("senderMessage").value.trim();
-
-        if (!name || !dignity || !message) {
-            alert("Please fill in all fields.");
+    document.getElementById('generateLinkBtn').addEventListener('click', async () => {
+        const senderName = document.getElementById('senderName').value.trim();
+        const senderMessage = document.getElementById('senderMessage').value.trim();
+        
+        if (!senderName || !senderMessage) {
+            alert('Please fill in both fields.');
             return;
         }
 
-        try {
-            const docRef = await addDoc(collection(db, "wishes"), {
-                senderName: name,
-                dignity: dignity,
-                message: message
+        // Add message to Firestore
+        const messageDoc = await addDoc(collection(db, 'messages'), {
+            senderName: senderName,
+            senderMessage: senderMessage
+        });
+
+        // Generate shareable link
+        const messageId = messageDoc.id;
+        const link = `${window.location.origin}/receiver.html?id=${messageId}`;
+        document.getElementById('linkText').innerText = `Link: ${link}`;
+        document.getElementById('linkText').style.display = 'block';
+        document.getElementById('shareLinkBtn').style.display = 'block';
+        document.getElementById('shareLinkBtn').onclick = () => {
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Link copied to clipboard!');
             });
-            const shareableLink = `${window.location.origin}${window.location.pathname}?id=${docRef.id}`;
+        };
 
-            document.getElementById("shareableLink").href = shareableLink;
-            document.getElementById("senderPopup").style.display = "none";
-            document.getElementById("linkPopup").style.display = "block";
-        } catch (error) {
-            console.error("Error adding document: ", error);
+        // Clear fields
+        document.getElementById('senderName').value = '';
+        document.getElementById('senderMessage').value = '';
+    });
+
+    document.getElementById('submitCaptureBtn').addEventListener('click', async () => {
+        const receiverName = document.getElementById('receiverName').value.trim();
+        if (!receiverName) {
+            alert('Please enter your name.');
+            return;
         }
-    };
 
-    // Share link
-    window.shareLink = function() {
-        const link = document.getElementById("shareableLink").href;
+        const messageId = new URLSearchParams(window.location.search).get('id');
 
-        if (navigator.share) {
-            navigator.share({
-                title: "Deepawali Wishes",
-                text: "Check out this Deepawali message!",
-                url: link
-            }).catch(error => console.log("Sharing failed:", error));
+        if (!messageId) {
+            alert('Invalid message link.');
+            return;
+        }
+
+        // Access the message from Firestore
+        const docRef = doc(db, 'messages', messageId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const { senderMessage, senderName } = docSnap.data();
+
+            // Capture image logic (using webcam)
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.play();
+                setTimeout(async () => {
+                    canvas.width = 640; // Set canvas width
+                    canvas.height = 480; // Set canvas height
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+
+                    // Stop the camera
+                    stream.getTracks().forEach(track => track.stop());
+
+                    // Upload image to Firebase Storage
+                    const imageRef = ref(storage, `images/${messageId}.jpg`);
+                    await uploadBytes(imageRef, imageBlob);
+                    const imageURL = await getDownloadURL(imageRef);
+
+                    // Display in popup
+                    document.getElementById('receiverWishName').textContent = receiverName;
+                    document.getElementById('displayedMessage').textContent = senderMessage;
+                    document.getElementById('senderNameDisplay').textContent = senderName;
+                    document.getElementById('receiverImage').src = imageURL;
+
+                    // Show the popup
+                    document.getElementById('popup').style.display = 'flex';
+                }, 2000);
+            });
         } else {
-            alert("Copy and share this link:\n" + link);
+            alert('No such message!');
         }
-    };
-
-    // Load and display message using Firestore ID
-    async function loadMessage() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const id = urlParams.get("id");
-
-        if (id) {
-            try {
-                const docRef = doc(db, "wishes", id);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const receiverName = prompt("Please enter your name:");
-                    
-                    if (receiverName) {
-                        displayMessage(receiverName, data);
-                    }
-                } else {
-                    alert("No such document! Please check the link.");
-                }
-            } catch (error) {
-                console.error("Error loading document: ", error);
-            }
-        }
-    }
-
-    // Display message in informal letter format
-    function displayMessage(receiverName, data) {
-        document.body.innerHTML = `
-            <div style="text-align: center; color: #fff;">
-                <h2>Dear ${receiverName},</h2>
-                <p>${data.message}</p>
-                <p>Sincerely,</p>
-                <p>${data.senderName}, ${data.dignity}</p>
-            </div>
-        `;
-    }
-
-    // Load message if there’s an ID in the URL
-    document.addEventListener("DOMContentLoaded", loadMessage);
-
-    // Attach the openSenderPopup and shareLink functions to buttons
-    document.getElementById("startButton").onclick = openSenderPopup;
-    document.getElementById("generateLinkButton").onclick = generateLink;
-    document.getElementById("shareButton").onclick = shareLink;
-
+    });
 </script>
 
 </body>
-    </html>
-    
+</html>
