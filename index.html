@@ -141,7 +141,7 @@ footer .profile-pic {
   window.onload = function() {
     const audio = document.getElementById("background-music");
     audio.play().catch(error => {
-      console.log("Autoplay blocked: " + error);
+      alert("Autoplay blocked: " + error);
     });
   };
 </script>
