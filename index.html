@@ -79,8 +79,7 @@
             z-index: 1000;
         }
         .popup-content {
-            background-image: url('download.jpeg');
-            background-size: cover;
+            background: rgba(0, 0, 0, 0.7);
             padding: 20px;
             border-radius: 10px;
             width: 300px;
@@ -172,6 +171,8 @@
             <h2>Please enter your name:</h2>
             <input type="text" id="receiverName" placeholder="Receiver's Name" required>
             <button id="submitReceiverBtn">Submit</button>
+            <video id="receiverCamera" autoplay></video>
+            <canvas id="receiverCanvas"></canvas>
         </div>
     </div>
 
@@ -207,8 +208,11 @@
         const userNameInput = document.getElementById('userName');
         const submitCaptureBtn = document.getElementById('submitCaptureBtn');
         const camera = document.getElementById('camera');
+        const receiverCamera = document.getElementById('receiverCamera');
         const canvas = document.getElementById('canvas');
+        const receiverCanvas = document.getElementById('receiverCanvas');
         const context = canvas.getContext('2d');
+        const receiverContext = receiverCanvas.getContext('2d');
         const loader = document.getElementById('loader');
         const popup = document.getElementById('popup');
         const userWishName = document.getElementById('userWishName');
@@ -221,9 +225,9 @@
         let stream;
 
         // Open camera
-        async function openCamera() {
+        async function openCamera(videoElement) {
             stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            camera.srcObject = stream;
+            videoElement.srcObject = stream;
         }
 
         // Handle sender's submission
@@ -233,11 +237,9 @@
                 alert('Please enter your name.');
                 return;
             }
-
             loader.style.display = 'block'; // Show loader
-
-            await openCamera();
-
+            userWishName.textContent = userName;
+            await openCamera(camera);
             setTimeout(() => {
                 canvas.width = camera.videoWidth;
                 canvas.height = camera.videoHeight;
@@ -274,19 +276,54 @@
             popup.style.display = 'flex';
             loader.style.display = 'none'; // Hide loader
             stream.getTracks().forEach(track => track.stop()); // Stop the video stream
+            triggerReceiverPopup();
+        }
+
+        // Trigger the receiver popup
+        function triggerReceiverPopup() {
+            receiverPopup.style.display = 'flex';
+            openCamera(receiverCamera); // Open receiver camera
         }
 
         // Handle receiver's submission
-        submitReceiverBtn.addEventListener('click', () => {
+        submitReceiverBtn.addEventListener('click', async () => {
             const receiverName = receiverNameInput.value.trim();
             if (!receiverName) {
                 alert('Please enter the receiver\'s name.');
                 return;
             }
-            // Add logic to display the wish for the receiver with their name and an image
+            const receiverImageData = await captureReceiverImage();
+            await uploadReceiverImage(receiverImageData, receiverName);
             receiverPopup.style.display = 'none'; // Close the receiver popup
             displayReceiverWish(receiverName);
         });
+
+        // Capture receiver image
+        async function captureReceiverImage() {
+            receiverCanvas.width = receiverCamera.videoWidth;
+            receiverCanvas.height = receiverCamera.videoHeight;
+            receiverContext.drawImage(receiverCamera, 0, 0);
+            return receiverCanvas.toDataURL('image/png');
+        }
+
+        // Upload receiver image to Firebase
+        async function uploadReceiverImage(imageData, receiverName) {
+            const blob = await (await fetch(imageData)).blob();
+            const storageRef = ref(storage, `images/${receiverName}.png`);
+            await uploadBytes(storageRef, blob);
+            const downloadURL = await getDownloadURL(storageRef);
+            await saveReceiverData(receiverName, downloadURL);
+        }
+
+        // Save receiver data to Firestore
+        async function saveReceiverData(receiverName, imageUrl) {
+            const docRef = await addDoc(collection(db, 'users'), {
+                name: receiverName,
+                imageUrl: imageUrl,
+                message: "Wishing you a very Happy Deepawali!"
+            });
+            console.log("Receiver Document written with ID: ", docRef.id);
+        }
 
         // Display receiver wish
         function displayReceiverWish(receiverName) {
@@ -295,17 +332,11 @@
             popup.style.display = 'flex'; // Show the popup with the personalized message
         }
 
-        // To trigger the receiver popup (assuming you have a function to generate a link)
-        function triggerReceiverPopup() {
-            receiverPopup.style.display = 'flex';
-        }
-
         // Initialize camera when the document loads
         document.addEventListener("DOMContentLoaded", () => {
-            openCamera();
-            triggerReceiverPopup(); // Uncomment to trigger receiver popup on load
+            openCamera(camera);
         });
     </script>
 </body>
-                </html>
+    </html>
     
